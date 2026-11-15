@@ -45,7 +45,10 @@ module UF
 
 
   let create (n: int) : (r: t)
-  (* TO BE COMPLETED: EXERCISE 2 *)
+    (* EXERCISE 2 *)
+  requires { n >= 0 } (* um array nunca pode ser negativo*)
+  ensures { r.size = n } (* o tamanho tem de ser igual ao valor pedido *)
+  ensures { forall i:int. 0 <= i < n -> r.rep i = i } (* o seu representante é ele própio pq no inicio não há grupos unidos *)
   = { size = n;
       link = init n (fun i -> i);
       rank = make n 0;
