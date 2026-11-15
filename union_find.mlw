@@ -11,10 +11,38 @@ module UF
     ghost mutable rep  : int -> int;
     ghost mutable dst  : int -> int;
     ghost mutable maxd : int;
+    
   } invariant { 0 <= maxd }
-    (* TO BE COMPLETED: EXERCISE 1 *)
-    by { size = 0; link = make 0 0; rank = make 0 0; rep = (fun i -> i);
+  
+    (* EXERCISE 1 *)
+
+         (* 1. arrays têm tamanho size *)
+         invariant { lenght link = size /\ lenght rank = size }
+         (* 2. todos os links apontam para indices válidos *)
+         invariant { forall x:int. 0 <= x <= size
+                        -> 0 <= link [x] < size }
+         (* 3. os representantes são indices válidos *)
+         invariant { forall x:int. o <= x < size
+                        -> 0 <= rep x < size }
+        (* 4. o representante de um invariante é ele própio *)
+        invariant { forall x:int. o <= x < size
+                        -> rep (rep x) = rep x }
+        (* 5. um elemnto é raiz se e só se aponta para si *)
+        invariant { forall x:int. 0 <= x < size
+                        -> x = link[x] <-> x = rep x }
+        (* 6. a distancia amenta a seguir um link *)
+        invariant { forall x:int. 0 <= x < size
+                        -> x <> link[x] -> dst x < dst (link[x]) }
+        (* 7. x aponta para outro elemento ambos têm o mesmo representante *)
+        invariant { forall x:int. 0 <= x < size
+                         x <> link[x] -> rep x = rep (link[x]) }
+        (* 8. a distancia nunca ultrapassa maxd *)
+        invariant { forall x:int. 0 <= x < size 
+                        -> dst x <= maxd }
+
+            by { size = 0; link = make 0 0; rank = make 0 0; rep = (fun i -> i);
          dst  = (fun _ -> 0); maxd = 0; }
+
 
   let create (n: int) : (r: t)
   (* TO BE COMPLETED: EXERCISE 2 *)
