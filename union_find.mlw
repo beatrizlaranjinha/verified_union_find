@@ -17,15 +17,15 @@ module UF
     (* EXERCISE 1 *)
 
          (* 1. arrays têm tamanho size *)
-         invariant { lenght link = size /\ lenght rank = size }
+         invariant { length link = size /\ length rank = size }
          (* 2. todos os links apontam para indices válidos *)
-         invariant { forall x:int. 0 <= x <= size
+         invariant { forall x:int. 0 <= x < size
                         -> 0 <= link [x] < size }
          (* 3. os representantes são indices válidos *)
-         invariant { forall x:int. o <= x < size
+         invariant { forall x:int. 0 <= x < size
                         -> 0 <= rep x < size }
         (* 4. o representante de um invariante é ele própio *)
-        invariant { forall x:int. o <= x < size
+        invariant { forall x:int. 0 <= x < size
                         -> rep (rep x) = rep x }
         (* 5. um elemnto é raiz se e só se aponta para si *)
         invariant { forall x:int. 0 <= x < size
@@ -35,7 +35,7 @@ module UF
                         -> x <> link[x] -> dst x < dst (link[x]) }
         (* 7. x aponta para outro elemento ambos têm o mesmo representante *)
         invariant { forall x:int. 0 <= x < size
-                         x <> link[x] -> rep x = rep (link[x]) }
+                         -> x <> link[x] -> rep x = rep (link[x]) }
         (* 8. a distancia nunca ultrapassa maxd *)
         invariant { forall x:int. 0 <= x < size 
                         -> dst x <= maxd }
@@ -57,9 +57,16 @@ module UF
       maxd = 0; }
 
   let find_it (x: int) (uf: t) : (r: int)
-  (* TO BE COMPLETED: EXERCISE 3 *)
-  = let ref y = uf.link[x] in
+  requires { 0 <= x < uf.size } (* para conseguir ter link [x] x tem de ser um indice valido *)
+  ensures { r = uf.rep x } (* o resultado da função tem de ser igual ao representante de x *)
+  ensures { uf.dst x <= uf.dst r } (* a distancia do representante é >= x *)
+  (* EXERCISE 3 *)
+  = let ref y = uf.link[x] in (*variavel y que começa no elemento apontado por x*)
     while y <> uf.link[y] do
+        invariant { 0 <= y < uf.size } (* continua um indice válido *)
+        invariant { uf.rep y = uf.rep x }(* y e x pertencem ao mesmo grupo, não começamos a procurar noutro grupo pelo representante *)
+        invariant { uf.dst x <= uf.dst y } (* ajuda a provar o 2º ensures *)
+        variant { uf.maxd - uf.dst y } (* diminui a cada ciclo *)
       y <- uf.link[y]
     done;
     y
