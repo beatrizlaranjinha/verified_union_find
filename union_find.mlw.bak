@@ -1,0 +1,124 @@
+module UF
+
+  use map.Map
+  use int.Int, int.MinMax
+  use array.Array, array.Init
+
+  type t = {
+                  link : array int;
+                  rank : array int;
+    ghost         size : int;
+    ghost mutable rep  : int -> int;
+    ghost mutable dst  : int -> int;
+    ghost mutable maxd : int;
+
+  } invariant { 0 <= maxd }
+
+    (* EXERCISE 1 *)
+
+         (* 1. arrays têm tamanho size *)
+         invariant { length link = size /\ length rank = size }
+         (* 2. todos os links apontam para indices válidos *)
+         invariant { forall x:int. 0 <= x < size
+                        -> 0 <= link [x] < size }
+         (* 3. os representantes são indices válidos *)
+         invariant { forall x:int. 0 <= x < size
+                        -> 0 <= rep x < size }
+        (* 4. o representante de um invariante é ele própio *)
+        invariant { forall x:int. 0 <= x < size
+                        -> rep (rep x) = rep x }
+        (* 5. um elemnto é raiz se e só se aponta para si *)
+        invariant { forall x:int. 0 <= x < size
+                        -> x = link[x] <-> x = rep x }
+        (* 6. a distancia amenta a seguir um link *)
+        invariant { forall x:int. 0 <= x < size
+                        -> x <> link[x] -> dst x < dst (link[x]) }
+        (* 7. x aponta para outro elemento ambos têm o mesmo representante *)
+        invariant { forall x:int. 0 <= x < size
+                         -> x <> link[x] -> rep x = rep (link[x]) }
+        (* 8. a distancia nunca ultrapassa maxd *)
+        invariant { forall x:int. 0 <= x < size
+                        -> dst x <= maxd }
+
+            by { size = 0; link = make 0 0; rank = make 0 0; rep = (fun i -> i);
+         dst  = (fun _ -> 0); maxd = 0; }
+
+
+  let create (n: int) : (r: t)
+    (* EXERCISE 2 *)
+  requires { n >= 0 } (* um array nunca pode ser negativo*)
+  ensures { r.size = n } (* o tamanho tem de ser igual ao valor pedido *)
+  ensures { forall i:int. 0 <= i < n -> r.rep i = i } (* o seu representante é ele própio pq no inicio não há grupos unidos *)
+  = { size = n;
+      link = init n (fun i -> i);
+      rank = make n 0;
+      rep  = (fun i -> i);
+      dst  = (fun _ -> 0);
+      maxd = 0; }
+
+  let find_it (x: int) (uf: t) : (r: int)
+  requires { 0 <= x < uf.size } (* para conseguir ter link [x] x tem de ser um indice valido *)
+  ensures { r = uf.rep x } (* o resultado da função tem de ser igual ao representante de x *)
+  ensures { uf.dst x <= uf.dst r } (* a distancia do representante é >= x *)
+  (* EXERCISE 3 *)
+  = let ref y = uf.link[x] in (*variavel y que começa no elemento apontado por x*)
+    while y <> uf.link[y] do
+        invariant { 0 <= y < uf.size } (* continua um indice válido *)
+        invariant { uf.rep y = uf.rep x }(* y e x pertencem ao mesmo grupo, não começamos a procurar noutro grupo pelo representante *)
+        invariant { uf.dst x <= uf.dst y } (* ajuda a provar o 2º ensures *)
+        variant { uf.maxd - uf.dst y } (* diminui a cada ciclo *)
+      y <- uf.link[y]
+    done;
+    y
+
+
+(* EXERCISE 4 *)
+let rec find (x: int) (uf: t) : (r: int)
+  requires { 0 <= x < uf.size }
+  ensures { r = uf.rep x }
+  ensures { uf.dst x <= uf.dst r }
+  variant { uf.maxd - uf.dst x }
+= if uf.link[x] = x then (* verifica se x aponta para ele própio *)
+    x
+  else
+    let y = uf.link[x] in (* guardar em y o prox elemento*)
+
+    assert { 0 <= y < uf.size }; (* o elemento y é valido *)
+    assert { uf.rep y = uf.rep x }; (* o elemento y pertence ao mesmo grupo que x *)
+    assert { uf.dst x < uf.dst y }; (* distancia de y maior que x , porque y esta a ficar mais prox da raiz *)
+
+    let root = find y uf in (* procurar a raiz de y, also no 2º assert garantimos que a raiz de x e y é igual )
+    uf.link[x] <- root; (* path compression *)
+    root
+
+  (** Auxiliary predicate to state two elements [i] and [j] belong to the same
+      equivalence class. Use it as you may find suitable. *)
+  predicate equiv (i j: int) (uf: t) =
+    0 <= i < uf.size -> 0 <= j < uf.size -> uf.rep i = uf.rep j
+
+  let union (i j: int) (uf: t) : (ghost old_rep : int)
+  (* TO BE COMPLETED: EXERCISE 5 *)
+  = let rep_i = find i uf in
+    let rep_j = find j uf in
+    if not rep_i = rep_j then
+      if uf.rank[rep_i] > uf.rank[rep_j] then begin
+        uf.link[rep_j] <- rep_i;
+        uf.rep <- pure {
+          (fun k -> if uf.rep k = uf.rep rep_j then rep_i else uf.rep k)};
+        uf.maxd <- uf.maxd + 1;
+        uf.dst  <- set uf.dst rep_i (1 + max (uf.dst rep_i) (uf.dst rep_j));
+        ghost 0 (* TO BE COMPLETED: EXERCISE 6 *)
+      end
+      else begin
+        uf.link[rep_i] <- rep_j;
+        uf.rep <- pure {
+          (fun k -> if uf.rep k = uf.rep rep_i then rep_j else uf.rep k)};
+        uf.maxd <- uf.maxd + 1;
+        uf.dst <- set uf.dst rep_j (1 + max (uf.dst rep_i) (uf.dst rep_j));
+        if uf.rank[rep_i] = uf.rank[rep_j] then
+          uf.rank[rep_i] <- uf.rank[rep_i] + 1;
+        ghost 0 (* TO BE COMPLETED: EXERCISE 6 *)
+      end
+    else
+      ghost 0 (* TO BE COMPLETED: EXERCISE 6 *)
+end

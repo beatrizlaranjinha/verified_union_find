@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE why3session PUBLIC "-//Why3//proof session v5//EN"
+"https://www.why3.org/why3session.dtd">
+<why3session shape_version="6">
+<prover id="0" name="Z3" version="4.16.0" timelimit="1" steplimit="0" memlimit="1000"/>
+<prover id="1" name="Alt-Ergo" version="2.4.3" timelimit="5" steplimit="0" memlimit="1000"/>
+<prover id="2" name="Z3" version="4.16.0" alternative="counterexamples" timelimit="1" steplimit="0" memlimit="1000"/>
+<file format="whyml" proved="true">
+<path name=".."/><path name="union_find.mlw"/>
+<theory name="UF">
+ <goal name="t&#39;vc" expl="VC for t">
+ <proof prover="1"><result status="valid" time="0.006671" steps="58"/></proof>
+ </goal>
+ <goal name="create&#39;vc" expl="VC for create">
+ <proof prover="0" obsolete="true"><result status="unknown" time="0.006859" steps="11310"/></proof>
+ <proof prover="1"><result status="valid" time="0.016989" steps="155"/></proof>
+ </goal>
+ <goal name="find_it&#39;vc" expl="VC for find_it">
+ <proof prover="1"><result status="valid" time="0.025285" steps="380"/></proof>
+ <proof prover="2"><result status="valid" time="0.012629" steps="12986"/></proof>
+ </goal>
+ <goal name="find&#39;vc" expl="VC for find">
+ <proof prover="0"><result status="timeout" time="1.015886" steps="6268702"/></proof>
+ <proof prover="1" timelimit="1"><result status="timeout" time="5.000000" steps="26701"/></proof>
+ </goal>
+ <goal name="union&#39;vc" expl="VC for union">
+ <proof prover="0" obsolete="true"><result status="timeout" time="1.000000" steps="3425043"/></proof>
+ <proof prover="1" obsolete="true"><result status="timeout" time="5.000000" steps="190371"/></proof>
+ </goal>
+</theory>
+</file>
+</why3session>

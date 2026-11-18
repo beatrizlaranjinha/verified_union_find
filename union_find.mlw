@@ -11,9 +11,9 @@ module UF
     ghost mutable rep  : int -> int;
     ghost mutable dst  : int -> int;
     ghost mutable maxd : int;
-    
+
   } invariant { 0 <= maxd }
-  
+
     (* EXERCISE 1 *)
 
          (* 1. arrays têm tamanho size *)
@@ -37,7 +37,7 @@ module UF
         invariant { forall x:int. 0 <= x < size
                          -> x <> link[x] -> rep x = rep (link[x]) }
         (* 8. a distancia nunca ultrapassa maxd *)
-        invariant { forall x:int. 0 <= x < size 
+        invariant { forall x:int. 0 <= x < size
                         -> dst x <= maxd }
 
             by { size = 0; link = make 0 0; rank = make 0 0; rep = (fun i -> i);
@@ -71,9 +71,26 @@ module UF
     done;
     y
 
-  (* TO BE COMPLETED: EXERCISE 4 *)
-  let rec find (x: int) (uf: t) : (r: int)
-  = absurd
+ 
+(* EXERCISE 4 *)
+let rec find (x: int) (uf: t) : (r: int)
+  requires { 0 <= x < uf.size }
+  ensures { r = uf.rep x }
+  ensures { uf.dst x <= uf.dst r }
+  variant { uf.maxd - uf.dst x }
+= if uf.link[x] = x then
+    x
+  else
+    let y = uf.link[x] in
+
+    assert { 0 <= y < uf.size };
+    assert { uf.rep y = uf.rep x };
+    assert { uf.dst x < uf.dst y };
+
+    let root = find y uf in
+    uf.link[x] <- root;
+    root
+
 
   (** Auxiliary predicate to state two elements [i] and [j] belong to the same
       equivalence class. Use it as you may find suitable. *)
