@@ -1,222 +1,256 @@
-// Verified Union-Find — apresentação académica minimalista.
-// Texto original preservado. Apenas os círculos dos esquemas usam rosa.
-
+// Relatório revisto, com foco nas decisões e nas provas (sem diff).
 #set page(
   paper: "a4",
-  margin: (top: 2.45cm, bottom: 2.35cm, left: 2.65cm, right: 2.65cm),
-  fill: white,
+  margin: (top: 2.3cm, bottom: 2.1cm, left: 2.5cm, right: 2.5cm),
   numbering: "1",
 )
-#set text(font: "New Computer Modern", size: 11pt, lang: "pt", fill: black)
-#set par(justify: true, leading: 0.55em, spacing: 0.64em)
-#set heading(numbering: "1.")
-#show heading.where(level: 1): set text(size: 15pt, weight: "bold", fill: black)
-#show heading.where(level: 2): set text(size: 12.5pt, weight: "bold", fill: black)
-#show heading.where(level: 3): set text(size: 11pt, weight: "bold", fill: black)
-#show figure.caption: set text(size: 9pt, fill: black)
-#show raw.where(block: true): set text(size: 8.5pt)
+#set text(font: "New Computer Modern", size: 10pt, lang: "pt")
+#set par(justify: true, leading: 0.54em)
+#set heading(numbering: none)
+#show heading.where(level: 1): set text(size: 12.4pt, weight: "bold")
+#show heading.where(level: 2): set text(size: 11pt, weight: "bold")
+#show raw: set text(size: 8.2pt)
+#show raw.where(block: true): it => block(
+  width: 100%,
+  fill: luma(247),
+  stroke: luma(225),
+  inset: 8pt,
+  radius: 2pt,
+  breakable: true,
+)[#it]
 
 #align(center)[
-  #v(0.9cm)
-  #text(size: 11pt)[Software Verification]
-  #v(0.38cm)
-  #text(size: 19pt, weight: "bold")[Verified Union-Find]
-  #v(0.24cm)
-  #text(size: 10pt)[Handout 2]
-  #v(0.9cm)
-  Nova School of Science and Technology — FCT NOVA
-  #v(0.35cm)
-  *Nome:* [Nome do estudante] \
-  *Ano letivo:* 2026/2027
+  #text(size: 17pt, weight: "bold")[Verified Union-Find in Why3]
+  #v(0.25em)
+  Verificação de Software · NOVA FCT
+  #v(0.15em)
+  #text(size: 9.4pt)[Handout 2 · Novembro de 2026]
+  #v(0.15em)
+  #text(size: 9pt)[Beatriz Morais Laranjinha]
 ]
-
-#v(0.9cm)
-#outline(title: [Índice])
-#pagebreak()
-
-// SVGs integrados: círculos em rosa, restante composição a preto e cinzento.
-#let fig1 = bytes("<svg xmlns='http://www.w3.org/2000/svg' width='720' height='225' viewBox='0 0 720 225' role='img'><rect x='0' y='0' width='720' height='225' fill='#FFFFFF'/><defs><marker id='arrow' markerWidth='8' markerHeight='8' refX='6.8' refY='3.5' orient='auto'><path d='M0 0 L7 3.5 L0 7 Z' fill='#555555'/></marker><marker id='orange-arrow' markerWidth='8' markerHeight='8' refX='6.8' refY='3.5' orient='auto'><path d='M0 0 L7 3.5 L0 7 Z' fill='#555555'/></marker></defs><text x='360' y='22' text-anchor='middle' font-family='New Computer Modern,serif' font-size='17' font-weight='700' fill='#222222'>Exemplo: 0 -> 2 -> 4 (raiz)</text><line x1='129' y1='88' x2='326' y2='88' stroke='#555555' stroke-width='2.3'  marker-end='url(#arrow)'/><line x1='394' y1='88' x2='591' y2='88' stroke='#555555' stroke-width='2.3'  marker-end='url(#arrow)'/><circle cx='100' cy='88' r='26' fill='#F8E4ED' stroke='#BA7295' stroke-width='2'/><text x='100' y='94' font-size='19' text-anchor='middle' font-family='New Computer Modern,serif' font-weight='700' fill='#222222'>0</text><circle cx='360' cy='88' r='26' fill='#F8E4ED' stroke='#BA7295' stroke-width='2'/><text x='360' y='94' font-size='19' text-anchor='middle' font-family='New Computer Modern,serif' font-weight='700' fill='#222222'>2</text><circle cx='620' cy='88' r='26' fill='#F8E4ED' stroke='#BA7295' stroke-width='2'/><text x='620' y='94' font-size='19' text-anchor='middle' font-family='New Computer Modern,serif' font-weight='700' fill='#222222'>4</text><path d='M614 61 C575 23 672 18 646 72' fill='none' stroke='#555555' stroke-width='2'/><path d='M639 64 L646 72 L651 60' fill='none' stroke='#555555' stroke-width='2'/><text x='230' y='75' text-anchor='middle' font-family='New Computer Modern,serif' font-size='13' font-weight='400' fill='#555555'>link[0] = 2</text><text x='490' y='75' text-anchor='middle' font-family='New Computer Modern,serif' font-size='13' font-weight='400' fill='#555555'>link[2] = 4</text><text x='620' y='131' text-anchor='middle' font-family='New Computer Modern,serif' font-size='13' font-weight='700' fill='#555555'>link[4] = 4</text><rect x='75' y='160' width='570' height='46' rx='9' fill='#FAFAFA' stroke='#EEEEEE'/><text x='360' y='188' text-anchor='middle' font-family='New Computer Modern,serif' font-size='15' font-weight='700' fill='#222222'>rep(0) = rep(2) = rep(4) = 4   (modelo ghost)</text></svg>")
-#let fig2 = bytes("<svg xmlns='http://www.w3.org/2000/svg' width='720' height='216' viewBox='0 0 720 216' role='img'><rect x='0' y='0' width='720' height='216' fill='#FFFFFF'/><defs><marker id='arrow' markerWidth='8' markerHeight='8' refX='6.8' refY='3.5' orient='auto'><path d='M0 0 L7 3.5 L0 7 Z' fill='#555555'/></marker><marker id='orange-arrow' markerWidth='8' markerHeight='8' refX='6.8' refY='3.5' orient='auto'><path d='M0 0 L7 3.5 L0 7 Z' fill='#555555'/></marker></defs><text x='360' y='22' text-anchor='middle' font-family='New Computer Modern,serif' font-size='17' font-weight='700' fill='#555555'>Exemplo de estado inconsistente (proibido)</text><circle cx='177' cy='102' r='26' fill='#F8E4ED' stroke='#BA7295' stroke-width='2'/><text x='177' y='108' font-size='19' text-anchor='middle' font-family='New Computer Modern,serif' font-weight='700' fill='#222222'>2</text><circle cx='548' cy='102' r='26' fill='#F8E4ED' stroke='#BA7295' stroke-width='2'/><text x='548' y='108' font-size='19' text-anchor='middle' font-family='New Computer Modern,serif' font-weight='700' fill='#222222'>4</text><path d='M168 76 C103 15 255 16 209 87' fill='none' stroke='#555555' stroke-width='2.4'/><path d='M201 77 L209 87 L212 74' fill='none' stroke='#555555' stroke-width='2'/><line x1='210' y1='103' x2='509' y2='103' stroke='#555555' stroke-width='2.3' stroke-dasharray='6 6' marker-end='url(#orange-arrow)'/><text x='176' y='159' text-anchor='middle' font-family='New Computer Modern,serif' font-size='16' font-weight='700' fill='#555555'>link[2] = 2</text><text x='548' y='159' text-anchor='middle' font-family='New Computer Modern,serif' font-size='16' font-weight='700' fill='#555555'>rep(2) = 4</text><text x='362' y='82' text-anchor='middle' font-family='New Computer Modern,serif' font-size='13' font-weight='400' fill='#555555'>ghost rep</text><text x='361' y='198' text-anchor='middle' font-family='New Computer Modern,serif' font-size='14' font-weight='400' fill='#222222'>O algoritmo devolveria 2, mas o modelo exige 4.</text></svg>")
-#let fig3 = bytes("<svg xmlns='http://www.w3.org/2000/svg' width='720' height='230' viewBox='0 0 720 230' role='img'><rect x='0' y='0' width='720' height='230' fill='#FFFFFF'/><defs><marker id='arrow' markerWidth='8' markerHeight='8' refX='6.8' refY='3.5' orient='auto'><path d='M0 0 L7 3.5 L0 7 Z' fill='#555555'/></marker><marker id='orange-arrow' markerWidth='8' markerHeight='8' refX='6.8' refY='3.5' orient='auto'><path d='M0 0 L7 3.5 L0 7 Z' fill='#555555'/></marker></defs><text x='345' y='22' text-anchor='middle' font-family='New Computer Modern,serif' font-size='17' font-weight='700' fill='#222222'>Crescimento de dst ao longo dos links</text><rect x='587' y='6' width='114' height='30' rx='10' fill='#FFFFFF' stroke='#555555'/><text x='644' y='26' text-anchor='middle' font-family='New Computer Modern,serif' font-size='14' font-weight='700' fill='#555555'>maxd = 3</text><line x1='139' y1='102' x2='326' y2='102' stroke='#555555' stroke-width='2.3'  marker-end='url(#arrow)'/><line x1='394' y1='102' x2='581' y2='102' stroke='#555555' stroke-width='2.3'  marker-end='url(#arrow)'/><circle cx='110' cy='102' r='26' fill='#F8E4ED' stroke='#BA7295' stroke-width='2'/><text x='110' y='108' font-size='19' text-anchor='middle' font-family='New Computer Modern,serif' font-weight='700' fill='#222222'>0</text><text x='110' y='157' text-anchor='middle' font-family='New Computer Modern,serif' font-size='15' font-weight='700' fill='#555555'>dst(0) = 0</text><circle cx='360' cy='102' r='26' fill='#F8E4ED' stroke='#BA7295' stroke-width='2'/><text x='360' y='108' font-size='19' text-anchor='middle' font-family='New Computer Modern,serif' font-weight='700' fill='#222222'>2</text><text x='360' y='157' text-anchor='middle' font-family='New Computer Modern,serif' font-size='15' font-weight='700' fill='#555555'>dst(2) = 1</text><circle cx='610' cy='102' r='26' fill='#F8E4ED' stroke='#BA7295' stroke-width='2'/><text x='610' y='108' font-size='19' text-anchor='middle' font-family='New Computer Modern,serif' font-weight='700' fill='#222222'>4</text><text x='610' y='157' text-anchor='middle' font-family='New Computer Modern,serif' font-size='15' font-weight='700' fill='#555555'>dst(4) = 3</text><text x='360' y='205' text-anchor='middle' font-family='New Computer Modern,serif' font-size='15' font-weight='400' fill='#222222'>0 &lt; 1 &lt; 3  e  cada distância é &lt;= maxd</text></svg>")
-#let fig4 = bytes("<svg xmlns='http://www.w3.org/2000/svg' width='720' height='215' viewBox='0 0 720 215' role='img'><rect x='0' y='0' width='720' height='215' fill='#FFFFFF'/><defs><marker id='arrow' markerWidth='8' markerHeight='8' refX='6.8' refY='3.5' orient='auto'><path d='M0 0 L7 3.5 L0 7 Z' fill='#555555'/></marker><marker id='orange-arrow' markerWidth='8' markerHeight='8' refX='6.8' refY='3.5' orient='auto'><path d='M0 0 L7 3.5 L0 7 Z' fill='#555555'/></marker></defs><text x='360' y='22' text-anchor='middle' font-family='New Computer Modern,serif' font-size='17' font-weight='700' fill='#222222'>create(4): quatro classes independentes</text><circle cx='100' cy='82' r='26' fill='#F8E4ED' stroke='#BA7295' stroke-width='2'/><text x='100' y='88' font-size='19' text-anchor='middle' font-family='New Computer Modern,serif' font-weight='700' fill='#222222'>0</text><text x='100' y='133' text-anchor='middle' font-family='New Computer Modern,serif' font-size='14' font-weight='400' fill='#555555'>rep(0) = 0</text><circle cx='270' cy='82' r='26' fill='#F8E4ED' stroke='#BA7295' stroke-width='2'/><text x='270' y='88' font-size='19' text-anchor='middle' font-family='New Computer Modern,serif' font-weight='700' fill='#222222'>1</text><text x='270' y='133' text-anchor='middle' font-family='New Computer Modern,serif' font-size='14' font-weight='400' fill='#555555'>rep(1) = 1</text><circle cx='450' cy='82' r='26' fill='#F8E4ED' stroke='#BA7295' stroke-width='2'/><text x='450' y='88' font-size='19' text-anchor='middle' font-family='New Computer Modern,serif' font-weight='700' fill='#222222'>2</text><text x='450' y='133' text-anchor='middle' font-family='New Computer Modern,serif' font-size='14' font-weight='400' fill='#555555'>rep(2) = 2</text><circle cx='620' cy='82' r='26' fill='#F8E4ED' stroke='#BA7295' stroke-width='2'/><text x='620' y='88' font-size='19' text-anchor='middle' font-family='New Computer Modern,serif' font-weight='700' fill='#222222'>3</text><text x='620' y='133' text-anchor='middle' font-family='New Computer Modern,serif' font-size='14' font-weight='400' fill='#555555'>rep(3) = 3</text><rect x='38' y='160' width='644' height='43' rx='8' fill='#FAFAFA' stroke='#EEEEEE'/><text x='215' y='186' text-anchor='middle' font-family='New Computer Modern,serif' font-size='15' font-weight='700' fill='#222222'>link = [0, 1, 2, 3]</text><text x='532' y='186' text-anchor='middle' font-family='New Computer Modern,serif' font-size='15' font-weight='700' fill='#222222'>rank = [0, 0, 0, 0]</text></svg>")
-#let fig5 = bytes("<svg xmlns='http://www.w3.org/2000/svg' width='720' height='252' viewBox='0 0 720 252' role='img'><rect x='0' y='0' width='720' height='252' fill='#FFFFFF'/><defs><marker id='arrow' markerWidth='8' markerHeight='8' refX='6.8' refY='3.5' orient='auto'><path d='M0 0 L7 3.5 L0 7 Z' fill='#555555'/></marker><marker id='orange-arrow' markerWidth='8' markerHeight='8' refX='6.8' refY='3.5' orient='auto'><path d='M0 0 L7 3.5 L0 7 Z' fill='#555555'/></marker></defs><text x='360' y='22' text-anchor='middle' font-family='New Computer Modern,serif' font-size='17' font-weight='700' fill='#222222'>find_it(0): a pesquisa começa em link[0]</text><line x1='166' y1='103' x2='316' y2='103' stroke='#555555' stroke-width='2.3'  marker-end='url(#arrow)'/><line x1='406' y1='103' x2='566' y2='103' stroke='#555555' stroke-width='2.3'  marker-end='url(#arrow)'/><circle cx='130' cy='103' r='26' fill='#F8E4ED' stroke='#BA7295' stroke-width='2'/><text x='130' y='109' font-size='19' text-anchor='middle' font-family='New Computer Modern,serif' font-weight='700' fill='#222222'>0</text><circle cx='360' cy='103' r='26' fill='#F8E4ED' stroke='#BA7295' stroke-width='2'/><text x='360' y='109' font-size='19' text-anchor='middle' font-family='New Computer Modern,serif' font-weight='700' fill='#222222'>2</text><circle cx='610' cy='103' r='26' fill='#F8E4ED' stroke='#BA7295' stroke-width='2'/><text x='610' y='109' font-size='19' text-anchor='middle' font-family='New Computer Modern,serif' font-weight='700' fill='#222222'>4</text><path d='M604 75 C557 27 680 29 640 91' fill='none' stroke='#555555' stroke-width='2'/><path d='M633 80 L640 91 L644 77' fill='none' stroke='#555555' stroke-width='2'/><text x='130' y='153' text-anchor='middle' font-family='New Computer Modern,serif' font-size='15' font-weight='700' fill='#222222'>x = 0</text><text x='360' y='153' text-anchor='middle' font-family='New Computer Modern,serif' font-size='15' font-weight='700' fill='#555555'>y inicial = 2</text><text x='610' y='153' text-anchor='middle' font-family='New Computer Modern,serif' font-size='15' font-weight='700' fill='#555555'>r = 4 (raiz)</text><rect x='42' y='187' width='635' height='47' rx='9' fill='#FAFAFA' stroke='#EEEEEE'/><text x='360' y='206' text-anchor='middle' font-family='New Computer Modern,serif' font-size='14' font-weight='700' fill='#222222'>y = link[0] = 2   ->   y = link[2] = 4</text><text x='360' y='223' text-anchor='middle' font-family='New Computer Modern,serif' font-size='12' font-weight='400' fill='#555555'>Como link[4] = 4, o while termina e devolve 4.</text></svg>")
+#v(0.6em)
 
 = Introdução
+<introdução>
+The objective of this work was to formally specify and verify a *Union-Find* implementation in Why3. This report presents the annotations and design decisions introduced to justify the correctness of the implementation and its associated proofs.
 
-wuauwuaaaaaa wua
-= Data Type Implementation
 
-A estrutura Union-Find representa os elementos do conjunto de índices de `0` a `size - 1`, usando principalmente dois arrays:
+= 1 — Type invariants
+<exercise-1-type-invariants>
+I implemented the eight #emph[type invariants] specified in the assignment. These can be divided into three groups based on their role in the proof:
+- #strong[Invariants 1–3] ensure valid array sizes and indices.
+- #strong[Invariants 4, 5, and 7] establish the relationship between the concrete links and the logical representatives.
+- #strong[Invariants 6 and 8], together with `0 <= maxd`, provide the properties needed to prove the termination of the `find` operations.
 
-- `link`: indica para que elemento aponta cada posição, permitindo seguir o caminho até à raiz. A raiz aponta para si própria.
-- `rank`: informação utilizada pela operação `union` para decidir como ligar duas árvores.
 
-Os campos `ghost`,são usados na especificação e na demonstração das propriedades do algoritmo:
+#strong[Preservation.] In `create`, each element is initialized as its own representative, with `link[i] = rep(i) = i` and `dst(i) = 0`. The `find_it` function only reads the arrays, leaving the invariants unchanged. In `find`, path compression updates a link to point directly to the root of the #emph[same equivalence class], preserving valid indices, representative consistency, and the increasing `dst` property. Finally, `union` updates `link`, `rep`, `dst`, and `maxd` to ensure that the invariants remain valid after merging two classes. The correctness of `find` and `union` is discussed in the following sections.
 
-- `size`: número de elementos da estrutura;
-- `rep`: função matemática que associa diretamente cada elemento ao representante da sua classe;
-- `dst`: função que associa um valor a cada elemento, aumentando estritamente quando se segue um link que não aponta para o próprio elemento;
-- `maxd`: limite superior para os valores de `dst` dos elementos válidos.
-
-= Union-Find Invariants
-
-== Exercise 1 — Type invariants (`Valid`)
-
-O objetivo é definir as condições que caracterizam um estado válido da estrutura. Estas propriedades são expressas como *type invariants* do tipo `t`.
-
-=== Especificação
-
+= Exercise 2 — `create`
+<exercise-2-create>
 
 ```why3
-invariant { 0 <= maxd }
-invariant { length link = size /\ length rank = size }
-invariant { forall x:int. 0 <= x < size ->
-            0 <= link[x] < size }
-invariant { forall x:int. 0 <= x < size ->
-            0 <= rep x < size }
-invariant { forall x:int. 0 <= x < size ->
-            rep (rep x) = rep x }
-invariant { forall x:int. 0 <= x < size ->
-            (x = link[x] <-> x = rep x) }
-invariant { forall x:int. 0 <= x < size ->
-            x <> link[x] -> dst x < dst (link[x]) }
-invariant { forall x:int. 0 <= x < size ->
-            x <> link[x] -> rep x = rep (link[x]) }
-invariant { forall x:int. 0 <= x < size ->
-            dst x <= maxd }
+requires { n >= 0 }
+ensures  { r.size = n }
+ensures  { forall i:int. 0 <= i < n -> r.rep i = i }
 ```
 
-=== Justificação
+The #emph[pre-condition] `n >= 0` ensures that the array size is non-negative. The #emph[post-conditions] follow from the assignments `size = n` and `rep = (fun i -> i)`, meaning that each element initially forms its own equivalence class.
 
-+ *Dimensões dos arrays:* `link` e `rank` têm ambos comprimento igual a `size`. Assim, cada elemento válido tem uma posição em ambos os arrays.
-+ *Links válidos:* para cada índice `x` válido, `link[x]` também está no intervalo `0 <= link[x] < size`. Isto garante que seguir um link não provoca um acesso fora dos limites do array.
-+ *Representantes válidos:* `rep x` pertence igualmente ao conjunto de índices válidos.
-+ *Idempotência de `rep`:* `rep (rep x) = rep x`. O representante de uma raiz é a própria raiz.
-+ *Caracterização de uma raiz:* `x = link[x] <-> x = rep x`. Um nó aponta para si próprio se e só se é o representante da respetiva classe.
-+ *Crescimento de `dst`:* sempre que `x <> link[x]`, temos `dst x < dst (link[x])`. Ao seguir links não triviais, o valor de `dst` aumenta estritamente.
-+ *Preservação do representante:* sempre que `x <> link[x]`, os elementos `x` e `link[x]` têm o mesmo representante. Portanto, percorrer um link não muda a classe de equivalência.
-+ *Limite de `dst`:* para todos os elementos válidos, `dst x <= maxd`. Em conjunto com o crescimento estrito, esta propriedade permite obter uma medida decrescente para a terminação.
+All eight #emph[type invariants] are true after `create`.
 
-Como perceber o invariante 5:
+Invariants 1–5 and 8 hold because the arrays have the correct size, every element is its own representative (`link[i] = rep(i) = i`), and all distances start at zero (`dst(i) = maxd = 0`).
 
-#figure(
-  image(fig2, format: "svg", width: 80%, alt: "Exemplo inválido: link de 2 aponta para 2, mas o ghost rep de 2 aponta para 4."),
-  caption: [Contraexemplo que o invariante 5 impede: se `link[2] = 2`, o representante matemático de `2` também tem de ser `2`, e não `4`.],
-)
+Invariants 6 and 7 are also true homever both use an implication (`->`) that starts with the condition `i <> link[i]`. Since every element initially points to itself, this condition is always false. An implication with a false first condition is considered true, regardless of the second condition. Therefore, both invariants hold.
 
-Como perceber o invariante 6 e 8
-
-#figure(
-  image(fig3, format: "svg", width: 83%, alt: "Cadeia de nós 0, 2 e 4 com dst 0, 1 e 3, todos menores ou iguais a maxd."),
-  caption: [Exemplo dos invariantes 6 e 8: seguindo os links, `dst` aumenta de 0 para 1 e depois 3, sem ultrapassar `maxd = 3`.],
-)
-
-O invariante adicional `0 <= maxd`, já incluído pelo professor, impõe que o limite superior utilizado em `dst` não seja negativo. Por si só, não demonstra a terminação, mas faz parte da especificação do estado válido.
-
-=== Consistência do tipo
-
-O construtor `by` disponibiliza uma testemunha de que existe uma estrutura que satisfaz os invariantes: uma Union-Find vazia, com `size = 0`, arrays vazios, `rep` igual à identidade, `dst` constante a zero e `maxd = 0`. As propriedades quantificadas sobre índices válidos são então verdadeiras, pois não existem índices no intervalo `0 <= x < 0`.
-
-A obrigação `t'vc` associada ao `by` foi observada como demonstrada no Why3 IDE. Esta verificação não substitui as provas de preservação dos invariantes pelas operações.
-
-= Verified Union-Find Operations
-
-== Create operation
-
-=== Exercise 2 — `create`
-
-A função `create(n)` constrói uma estrutura com `n` elementos, inicialmente separados, ou seja, cada elemento é representante de si próprio. Não foi necessário alterar a implementação fornecida.
-
-*Contrato proposto:*
+= Exercise 3 — `find_it`
+<exercise-3-find_it>
 
 ```why3
-let create (n: int) : (r: t)
-  requires { n >= 0 }
-  ensures  { r.size = n }
-  ensures  { forall i:int. 0 <= i < n -> r.rep i = i }
+invariant { 0 <= y < uf.size }
+invariant { uf.rep y = uf.rep x }
+invariant { uf.dst x <= uf.dst y }
+variant   { uf.maxd - uf.dst y }
 ```
 
-A *precondition* `n >= 0` é necessária para criar arrays com um comprimento válido. A primeira *postcondition* estabelece que o número de elementos da estrutura é exatamente `n`. A segunda indica que, no estado inicial, todos os elementos pertencem a classes individuais, pois `rep i = i`.
 
-=== Justificação da correção
-
-O código inicializa `link` com `init n (fun i -> i)`, pelo que todos os índices apontam para si próprios, e cria `rank` com `n` entradas iguais a zero. Define ainda `rep` como a identidade, `dst` como a função constante zero e `maxd = 0`.
-
-#figure(
-  image(fig4, format: "svg", width: 85%, alt: "Quatro nós isolados 0, 1, 2 e 3; link de cada nó é ele próprio e rank todos zero."),
-  caption: [Estado produzido por `create(4)`: cada elemento constitui uma classe isolada e é o seu próprio representante.],
-)
-
-Deste modo, `link` e `rank` têm o comprimento esperado, os links e representantes são válidos, cada elemento é a sua própria raiz e os invariantes relativos a links não triviais são satisfeitos de forma imediata. Como `dst i = 0` e `maxd = 0`, os limites das distâncias também se verificam. A construção satisfaz assim o contrato proposto e os *type invariants*.
-
-*Estado da prova:* é necessário confirmar no Why3 IDE que a obrigação `create'vc` está demonstrada antes de declarar formalmente concluído o exercício.
-
-== Find operation
-
-=== Exercise 3 — `find_it`
-
-A função iterativa `find_it(x, uf)` encontra o representante de `x` seguindo os links até alcançar um elemento que aponta para si próprio. A implementação fornecida começa com `y = uf.link[x]` e, enquanto `y <> uf.link[y]`, atualiza `y` para `uf.link[y]`.
-
-#figure(
-  image(fig5, format: "svg", width: 84%, alt: "Find iterativo parte de x igual a 0, y começa em 2, depois passa para 4, a raiz."),
-  caption: [Execução de `find_it(0)`: a variável `y` inicia-se em `link[0] = 2`, segue para `4` e o ciclo termina quando `link[4] = 4`.],
-)
-
-*Contrato proposto:*
+= Exercise 3 — `find_it`
+<exercise-3-find_it>
 
 ```why3
-let find_it (x: int) (uf: t) : (r: int)
-  requires { 0 <= x < uf.size }
-  ensures  { r = uf.rep x }
-  ensures  { uf.dst x <= uf.dst r }
+invariant { 0 <= y < uf.size }
+invariant { uf.rep y = uf.rep x }
+invariant { uf.dst x <= uf.dst y }
+variant   { uf.maxd - uf.dst y }
 ```
 
-A *precondition* exige que `x` seja um índice válido, porque a implementação consulta `uf.link[x]`. A primeira *postcondition* garante que o valor devolvido `r` é o representante de `x`. A segunda garante que o valor de `dst` da raiz não é inferior ao do elemento inicial, conforme exigido pelo enunciado.
+#strong[Initialization.] Before the first iteration, `y = uf.link[x]`. Type invariant 2 guarantees that `y` is a valid index.
 
-=== Loop invariants e variant
+If `x` is already a root, then `y = x`, so the other two loop invariants hold because both sides are equal. Otherwise, type invariant 7 guarantees that `x` and `y` have the same representative, while type invariant 6 guarantees that `dst(x) < dst(y)`. Therefore, all three loop invariants are initially true.
 
-Para verificar o ciclo `while`, foram propostas as seguintes anotações, sem alterar a sua implementação:
+#strong[Preservation.] The loop executes only when `y != uf.link[y]`. Each iteration updates `y` to `uf.link[y]`.
+
+Type invariant 2 guarantees that the new `y` remains a valid index. Type invariant 7 guarantees that following a link does not change the representative, so `rep(y) = rep(x)` remains true. Finally, type invariant 6 guarantees that `dst(y)` increases when following a link, preserving `dst(x) <= dst(y)`.
+
+Therefore, all three loop invariants remain true after every iteration.
+
+#strong[Termination.] The variant `uf.maxd - uf.dst y` is always non-negative because type invariant 8 guarantees that `dst(y) <= maxd`.
+
+At each iteration, `dst(y)` strictly increases (type invariant 6), while `maxd` remains unchanged. Therefore, the variant strictly decreases.
+
+For example, if `maxd = 5` and `dst(y)` increases from 1 to 3 and then to 5, the variant decreases from 4 to 2 and finally to 0.
+
+Since a non-negative integer cannot decrease forever, the loop must terminate.
+
+#strong[Post-conditions.] When the loop finishes, `y = uf.link[y]`, meaning that `y` points to itself. By type invariant 5, `y = rep(y)`.
+
+Since the second loop invariant guarantees that `rep(y) = rep(x)`, we conclude that `y = rep(x)`. This proves the first `ensures`.
+
+The third loop invariant, `dst(x) <= dst(y)`, directly proves the second `ensures`, since the function returns `y`.
+
+
+
+= Exercise 4 — Recursive `find`
+<exercise-4-find>
+
+We implemented `find` with the same contract as `find_it`, but added #emph[path compression]. After finding the root, the function updates the current element to point directly to it.
 
 ```why3
-while y <> uf.link[y] do
-  invariant { 0 <= y < uf.size }
-  invariant { uf.rep y = uf.rep x }
-  invariant { uf.dst x <= uf.dst y }
-  variant   { uf.maxd - uf.dst y }
-  y <- uf.link[y]
-done;
+variant { uf.maxd - uf.dst x }
+= if uf.link[x] = x then
+    x
+  else
+    let y = uf.link[x] in
+    assert { 0 <= y < uf.size };
+    assert { uf.rep y = uf.rep x };
+    assert { uf.dst x < uf.dst y };
+    let root = find y uf in
+    uf.link[x] <- root;
+    root
 ```
 
-O primeiro invariante garante que `y` se mantém dentro dos limites do array, tornando seguros os acessos a `uf.link[y]`. O segundo garante que `y` continua na classe de equivalência de `x`. O terceiro regista que a distância associada ao elemento atual nunca é inferior à distância inicial, propriedade necessária para a segunda *postcondition*.
+#strong[Base case.] If `link[x] = x`, then `x` is already a root. By type invariant 5, `x = rep(x)`, so returning `x` satisfies the first `ensures`. The second `ensures` also holds because `dst(x) <= dst(x)` is always true.
 
-=== Inicialização e preservação dos invariantes
+#strong[Recursive step.] If `x` is not a root, we set `y = link[x]`. The three `assert` statements express properties guaranteed by type invariants 2, 7, and 6.
 
-*Inicialização.* Antes do ciclo, `y = uf.link[x]`. Como `x` é válido e o tipo garante que todos os links também são válidos, `y` é válido. O invariante 7 do tipo garante que `rep` não muda ao seguir um link não trivial; se `x` já for raiz, a igualdade é imediata. Assim, `uf.rep y = uf.rep x`. Pela propriedade de crescimento de `dst`, temos `uf.dst x <= uf.dst y`, com igualdade quando `x` já é raiz.
+They guarantee that `y` is a valid index, belongs to the same class as `x`, and has a greater `dst` value. Therefore, the recursive call `find y uf` satisfies its pre-condition.
 
-*Preservação.* Em cada iteração executamos `y <- uf.link[y]`. O novo `y` continua válido pelo invariante 2 do tipo, mantém o mesmo representante pelo invariante 7 e tem `dst` estritamente maior pelo invariante 6, porque a guarda do ciclo assegura `y <> uf.link[y]`. Consequentemente, os três invariantes do ciclo são preservados.
+The recursive call returns `root = rep(y)`. Since `rep(y) = rep(x)`, we know that `root` is also the correct representative of `x`. Its contract also guarantees `dst(y) <= dst(root)`.
 
-=== Terminação e postconditions
+#strong[Preservation.] After finding the root, we execute `link[x] <- root`.
 
-O *variant* `uf.maxd - uf.dst y` é um inteiro não negativo para qualquer `y` válido, devido ao invariante `dst y <= maxd`. Quando o corpo do ciclo é executado, `dst y` aumenta estritamente, pelo que o *variant* diminui estritamente. Como não pode continuar a diminuir indefinidamente, o ciclo termina.
+This does not change the equivalence class of `x`, since `root` was already its representative. The new link is valid because `root` is a valid index.
 
-Quando o ciclo termina, a guarda é falsa e temos `y = uf.link[y]`. Pelo invariante 5 do tipo, isto implica `y = uf.rep y`. Como o segundo invariante do ciclo garante `uf.rep y = uf.rep x`, concluímos `y = uf.rep x`. A função devolve `r = y`, obtendo-se a primeira *postcondition*. O terceiro invariante do ciclo implica diretamente `uf.dst x <= uf.dst r`, que é a segunda *postcondition*.
+We also know that:
 
-*Estado da prova:* é necessário confirmar no Why3 IDE as obrigações associadas a `find_it'vc`, incluindo a terminação do `while`, antes de declarar a função formalmente verificada.
+```text
+dst(x) < dst(y) <= dst(root)
+```
 
-=== Exercise 4 — `find`
+Therefore, `dst(x) < dst(root)`, meaning that the new link still satisfies type invariant 6.
 
-A completar: implementação recursiva, *path compression*, contrato e prova de terminação.
+Since `x` was not originally a root, and `root = rep(x)`, type invariant 5 also guarantees that `x != root`. Thus, path compression does not incorrectly turn `x` into a root.
 
-== Union operation
+The other elements keep the same representatives, so the relevant type invariants remain true after compression.
 
-=== Exercise 5 — `union` specification
+#strong[Termination.] The variant `uf.maxd - uf.dst x` is non-negative because type invariant 8 guarantees `dst(x) <= maxd`.
 
-A completar: especificação das alterações aos representantes após a união de duas classes.
+In each recursive call, the argument changes from `x` to `y`, where `dst(y) > dst(x)`. Since `maxd` does not change, the variant strictly decreases.
 
-=== Exercise 6 — `union` branches
+As it cannot decrease indefinitely while remaining non-negative, the recursion must terminate.
 
-A completar: valores `ghost` devolvidos nos diferentes ramos da função.
+#strong[Post-conditions.] The recursive call gives `root = rep(x)`, proving the first `ensures`. Also, since `dst(x) < dst(y) <= dst(root)`, the second `ensures` holds. The function therefore returns the correct representative while preserving the structure's invariants.
 
-= Conclusões
 
-A completar após a conclusão dos exercícios 4 a 6 e a verificação final de todas as obrigações de prova. Até esta fase, foram definidos os *type invariants* e propostas as especificações de `create` e `find_it`, incluindo uma justificação de correção e de terminação do ciclo. A confirmação das provas das operações deverá ser registada com base na sessão Why3.
+#pagebreak()
+
+= Exercise 5 — `union` Contract
+<exercise-5-union>
+
+We added two `requires` clauses to guarantee that `i` and `j` are valid indices, allowing us to call `find` on both elements.
+
+We divided the post-conditions into three `ensures`:
+
+```why3
+ensures {
+  old_rep = old (uf.rep i) \/
+  old_rep = old (uf.rep j)
+}
+ensures {
+  forall w:int. 0 <= w < uf.size ->
+    (old (uf.rep w) = old (uf.rep i) \/
+     old (uf.rep w) = old (uf.rep j)) ->
+    uf.rep w = old_rep
+}
+ensures {
+  forall w:int. 0 <= w < uf.size ->
+    (old (uf.rep w) <> old (uf.rep i) /\
+     old (uf.rep w) <> old (uf.rep j)) ->
+    uf.rep w = old (uf.rep w)
+}
+```
+
+The first `ensures` guarantees that the chosen representative is one of the two original roots.
+
+The second guarantees that every element belonging to either of the two classes has `old_rep` as its new representative.
+
+The third guarantees that elements belonging to other classes keep their original representatives.
+
+We use `old` to compare the state before and after the operation, since `union` modifies `rep`.
+
+#strong[Preservation.] If both elements already have the same root, the function does not modify the structure. Therefore, all three post-conditions are satisfied.
+
+Otherwise, one root is linked to the other, depending on their `rank` values.
+
+The statement `uf.rep <- pure { ... }` updates the logical representatives of the absorbed class to the chosen root, while leaving all other classes unchanged. This ensures that the second and third post-conditions hold.
+
+To preserve the distance invariants, the chosen root receives the value:
+
+```why3
+1 + max (uf.dst rep_i) (uf.dst rep_j)
+```
+
+This value is strictly greater than the previous distances of both roots, so the newly created link satisfies type invariant 6.
+
+The function also increases `maxd` by one. Since the previous distances were bounded by the old `maxd`, the new distance cannot exceed the updated limit. Therefore, type invariant 8 remains true.
+
+The updates to `link`, `rep`, `dst`, and `maxd` ensure that the structure remains valid after merging the classes.
+
+
+= Exercise 6 — Return Values
+<exercise-6-return>
+
+We replaced the three temporary `ghost 0` values with the representative chosen in each branch of `union`.
+
+#table(
+  columns: (1.4fr, 1fr, 2fr),
+  inset: 6pt,
+  [*Condition*], [*Return value*], [*Reason*],
+
+  [`rank[rep_i] > rank[rep_j]`],
+  [`ghost rep_i`],
+  [`rep_j` is linked to `rep_i`, so `rep_i` becomes the root.],
+
+  [Different roots and `rank[rep_i] <= rank[rep_j]`],
+  [`ghost rep_j`],
+  [`rep_i` is linked to `rep_j`, so `rep_j` becomes the root.],
+
+  [`rep_i = rep_j`],
+  [`ghost rep_i`],
+  [Both elements already have the same representative, so no union is needed.],
+)
+
+#strong[Correctness.] In each case, the returned value matches the representative selected by the operation.
+
+Since `rep_i` and `rep_j` are the original roots obtained by `find`, the returned `old_rep` always satisfies the first `ensures` of Exercise 5.
+
+Together with the updates to `rep`, this also guarantees that every element in the merged class has the chosen representative.
+
+
+= Conclusion
+<conclusion>
+
+In this assignment, we completed the specification and verification annotations of a Union-Find implementation in Why3.
+
+The #emph[type invariants] define valid states, the #emph[loop invariants] support the correctness proof of `find_it`, and the #emph[variants] establish termination. The function contracts describe the expected results of `create`, `find`, and `union`.
+
+The main challenge was showing that operations such as #emph[path compression] and class merging preserve the invariants, rather than only returning the correct representative.

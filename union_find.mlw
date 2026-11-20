@@ -71,7 +71,7 @@ module UF
     done;
     y
 
- 
+
 (* EXERCISE 4 *)
 let rec find (x: int) (uf: t) : (r: int)
   requires { 0 <= x < uf.size }
@@ -97,18 +97,43 @@ let rec find (x: int) (uf: t) : (r: int)
   predicate equiv (i j: int) (uf: t) =
     0 <= i < uf.size -> 0 <= j < uf.size -> uf.rep i = uf.rep j
 
-  let union (i j: int) (uf: t) : (ghost old_rep : int)
-  (* TO BE COMPLETED: EXERCISE 5 *)
+
+let union (i j: int) (uf: t) : (ghost old_rep : int)
+  (* EXERCISE 5 *)
+
+  requires { 0 <= i < uf.size }
+  requires { 0 <= j < uf.size }
+
+  ensures {
+    old_rep = old (uf.rep i) \/
+    old_rep = old (uf.rep j)
+  }
+  ensures {
+    forall w:int. 0 <= w < uf.size ->
+      old (uf.rep w) = old (uf.rep i) \/ old (uf.rep w) = old (uf.rep j) ->
+            uf.rep w = old_rep
+  }
+  ensures {
+    forall w:int. 0 <= w < uf.size ->
+        (old (uf.rep w) <> old (uf.rep i) /\ old (uf.rep w) <> old (uf.rep j))
+    ->uf.rep w = old (uf.rep w)
+}
+
+(* EXERCISE 5 *)
+(* encontrar os representantes *)
   = let rep_i = find i uf in
     let rep_j = find j uf in
+    (* verficar se já estão unidos *)
     if not rep_i = rep_j then
-      if uf.rank[rep_i] > uf.rank[rep_j] then begin
+      if uf.rank[rep_i] > uf.rank[rep_j] then begin (* escolher a raiz com base no rank *)
         uf.link[rep_j] <- rep_i;
+        (* se k pertencia a rep_j o representante passa a ser rep_i , caso contrario k mantem se *)
         uf.rep <- pure {
           (fun k -> if uf.rep k = uf.rep rep_j then rep_i else uf.rep k)};
+(* atualizar e o max e dst *)
         uf.maxd <- uf.maxd + 1;
         uf.dst  <- set uf.dst rep_i (1 + max (uf.dst rep_i) (uf.dst rep_j));
-        ghost 0 (* TO BE COMPLETED: EXERCISE 6 *)
+        ghost rep_i (* EXERCISE 6 *) (* rank[rep_i] > rank[rep_j] , logo escolhemos rep_i*)
       end
       else begin
         uf.link[rep_i] <- rep_j;
@@ -118,8 +143,8 @@ let rec find (x: int) (uf: t) : (r: int)
         uf.dst <- set uf.dst rep_j (1 + max (uf.dst rep_i) (uf.dst rep_j));
         if uf.rank[rep_i] = uf.rank[rep_j] then
           uf.rank[rep_i] <- uf.rank[rep_i] + 1;
-        ghost 0 (* TO BE COMPLETED: EXERCISE 6 *)
+           ghost rep_j (*  EXERCISE 6 *) (* tem representante maior ou igual por isso como raiz do grupo *)
       end
     else
-      ghost 0 (* TO BE COMPLETED: EXERCISE 6 *)
+      ghost rep_i (*  EXERCISE 6 *) (* ja pertencem ao mesmo grupo por isso mantem se o representante *)
 end
