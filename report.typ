@@ -4,7 +4,7 @@
   margin: (top: 2.3cm, bottom: 2.1cm, left: 2.5cm, right: 2.5cm),
   numbering: "1",
 )
-#set text(font: "New Computer Modern", size: 10pt, lang: "pt")
+#set text(font: "New Computer Modern", size: 10pt, lang: "en")
 #set par(justify: true, leading: 0.54em)
 #set heading(numbering: none)
 #show heading.where(level: 1): set text(size: 12.4pt, weight: "bold")
@@ -24,18 +24,17 @@
   #v(0.25em)
   Verificação de Software · NOVA FCT
   #v(0.15em)
-  #text(size: 9.4pt)[Handout 2 · Novembro de 2026]
+  #text(size: 9.4pt)[Handout 2 · November 2026]
   #v(0.15em)
   #text(size: 9pt)[Beatriz Morais Laranjinha]
 ]
 #v(0.6em)
 
-= Introdução
-<introdução>
+= Introduction
+<introduction>
 The objective of this work was to formally specify and verify a *Union-Find* implementation in Why3. This report presents the annotations and design decisions introduced to justify the correctness of the implementation and its associated proofs.
 
-
-= 1 — Type invariants
+= Exercise 1 — Type Invariants
 <exercise-1-type-invariants>
 I implemented the eight #emph[type invariants] specified in the assignment. These can be divided into three groups based on their role in the proof:
 - #strong[Invariants 1–3] ensure valid array sizes and indices.
@@ -72,17 +71,6 @@ invariant { uf.dst x <= uf.dst y }
 variant   { uf.maxd - uf.dst y }
 ```
 
-
-= Exercise 3 — `find_it`
-<exercise-3-find_it>
-
-```why3
-invariant { 0 <= y < uf.size }
-invariant { uf.rep y = uf.rep x }
-invariant { uf.dst x <= uf.dst y }
-variant   { uf.maxd - uf.dst y }
-```
-
 #strong[Initialization.] Before the first iteration, `y = uf.link[x]`. Type invariant 2 guarantees that `y` is a valid index.
 
 If `x` is already a root, then `y = x`, so the other two loop invariants hold because both sides are equal. Otherwise, type invariant 7 guarantees that `x` and `y` have the same representative, while type invariant 6 guarantees that `dst(x) < dst(y)`. Therefore, all three loop invariants are initially true.
@@ -106,7 +94,6 @@ Since a non-negative integer cannot decrease forever, the loop must terminate.
 Since the second loop invariant guarantees that `rep(y) = rep(x)`, we conclude that `y = rep(x)`. This proves the first `ensures`.
 
 The third loop invariant, `dst(x) <= dst(y)`, directly proves the second `ensures`, since the function returns `y`.
-
 
 
 = Exercise 4 — Recursive `find`
@@ -214,7 +201,6 @@ This value is strictly greater than the previous distances of both roots, so the
 The function also increases `maxd` by one. Since the previous distances were bounded by the old `maxd`, the new distance cannot exceed the updated limit. Therefore, type invariant 8 remains true.
 
 The updates to `link`, `rep`, `dst`, and `maxd` ensure that the structure remains valid after merging the classes.
-
 
 = Exercise 6 — Return Values
 <exercise-6-return>
