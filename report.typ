@@ -235,8 +235,4 @@ Together with the updates to `rep`, this also guarantees that every element in t
 = Conclusion
 <conclusion>
 
-In this assignment, we completed the specification and verification annotations of a Union-Find implementation in Why3.
-
-The #emph[type invariants] define valid states, the #emph[loop invariants] support the correctness proof of `find_it`, and the #emph[variants] establish termination. The function contracts describe the expected results of `create`, `find`, and `union`.
-
-The main challenge was showing that operations such as #emph[path compression] and class merging preserve the invariants, rather than only returning the correct representative.
+theres no conclusion
